@@ -40,3 +40,7 @@ export function getInstructorList(){
 export function getStudent(){
     return axios.get(`http://localhost:8080/api/student`)
 }
+
+export function cancelCourse(data){
+    return axios.post(`http://localhost:8080/api/register/cancel-register`,data)
+}
