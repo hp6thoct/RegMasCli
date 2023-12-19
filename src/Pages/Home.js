@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Table, Checkbox, Button } from "antd";
 import { useUser } from "../Context/UserContext";
 import {
+  cancelCourse,
   getCourse,
   getStudentCourse,
   registerCourse,
@@ -78,7 +79,7 @@ const Home = () => {
         <Checkbox
           onChange={(e) => handleCheckboxChange(record.id, e.target.checked)}
           checked={selectedCourses.includes(record.id)} // Set checked based on selectedCourses
-          disabled={registeredCourseIds.includes(record.id)} // Disable the checkbox if the course is already registered
+          //disabled={registeredCourseIds.includes(record.id)} // Disable the checkbox if the course is already registered
         />
       ),
     },
@@ -99,41 +100,78 @@ const Home = () => {
   };
 
   // Function to handle submit button click
-  const handleSubmit = () => {
-    // Filter out selected courses that are already registered
-    const coursesToRegister = selectedCourses.filter(
-      (courseId) => !registeredCourseIds.includes(courseId)
-    );
-
-    // Perform actions with selected courses
-    console.log("Selected Courses to Register:", coursesToRegister);
-
-    // Assuming registerCourse is a function that registers a course for a student
-    coursesToRegister.forEach(async (courseId) => {
-      const course = data.find((c) => c.id === courseId);
-
-      if (course) {
-        const registrationData = {
-          student: user,
-          course: course,
-        };
-
-        try {
-          // Assuming registerCourse is an asynchronous function
-          const res = await registerCourse(registrationData);
-          console.log(
-            `Registered for course: ${course.subject.name}`,
-            res.status
-          );
-          fetchData();
-        } catch (error) {
-          console.error(
-            `Error registering for course: ${course.subject.name}`,
-            error
-          );
-        }
-      }
-    });
+  const handleSubmit = async () => {
+    try {
+      // Filter out selected courses that are already registered
+      const coursesToRegister = selectedCourses.filter(
+        (courseId) => !registeredCourseIds.includes(courseId)
+      );
+  
+      // Filter out courses that were previously selected but are now unselected
+      const coursesToCancel = registeredCourseIds.filter(
+        (courseId) => !selectedCourses.includes(courseId)
+      );
+  
+      // Perform registration for selected courses
+      await Promise.all(
+        coursesToRegister.map(async (courseId) => {
+          const course = data.find((c) => c.id === courseId);
+  
+          if (course) {
+            const registrationData = {
+              student: user,
+              course: course,
+            };
+  
+            try {
+              // Assuming registerCourse is an asynchronous function
+              const res = await registerCourse(registrationData);
+              console.log(
+                `Registered for course: ${course.subject.name}`,
+                res.status
+              );
+            } catch (error) {
+              console.error(
+                `Error registering for course: ${course.subject.name}`,
+                error
+              );
+            }
+          }
+        })
+      );
+  
+      // Perform cancellation for unselected courses
+      await Promise.all(
+        coursesToCancel.map(async (courseId) => {
+          const course = data.find((c) => c.id === courseId);
+          
+          if (course) {
+            const registrationData = {
+              student: user,
+              course: course,
+            };
+            try {
+              // Assuming cancelCourse is an asynchronous function
+              const res = await cancelCourse(registrationData);
+              console.log(
+                `Canceled registration for course: ${course.subject.name}`,
+                res.status
+              );
+            } catch (error) {
+              console.error(
+                `Error canceling registration for course: ${course.subject.name}`,
+                error
+              );
+            }
+          }
+        })
+      );
+  
+      // Refetch data to update the UI
+      fetchData();
+    } catch (error) {
+      console.error("Error processing registration/cancellation", error);
+    }
   };
 
   if (loading) {
